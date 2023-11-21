@@ -1,13 +1,12 @@
 from torch import nn
 import torch
 from torch import optim
-from cs16831.hw4_part1.models.base_model import BaseModel
-from cs16831.hw4_part1.infrastructure.utils import normalize, unnormalize
-from cs16831.hw4_part1.infrastructure import pytorch_util as ptu
+from gp4expl.models.base_model import BaseModel
+from gp4expl.infrastructure.utils import normalize, unnormalize
+from gp4expl.infrastructure import pytorch_util as ptu
 
 
 class FFModel(nn.Module, BaseModel):
-
     def __init__(self, ac_dim, ob_dim, n_layers, size, learning_rate=0.001):
         super(FFModel, self).__init__()
 
@@ -36,13 +35,13 @@ class FFModel(nn.Module, BaseModel):
         self.delta_std = None
 
     def update_statistics(
-            self,
-            obs_mean,
-            obs_std,
-            acs_mean,
-            acs_std,
-            delta_mean,
-            delta_std,
+        self,
+        obs_mean,
+        obs_std,
+        acs_mean,
+        acs_std,
+        delta_mean,
+        delta_std,
     ):
         self.obs_mean = ptu.from_numpy(obs_mean)
         self.obs_std = ptu.from_numpy(obs_std)
@@ -52,15 +51,15 @@ class FFModel(nn.Module, BaseModel):
         self.delta_std = ptu.from_numpy(delta_std)
 
     def forward(
-            self,
-            obs_unnormalized,
-            acs_unnormalized,
-            obs_mean,
-            obs_std,
-            acs_mean,
-            acs_std,
-            delta_mean,
-            delta_std,
+        self,
+        obs_unnormalized,
+        acs_unnormalized,
+        obs_mean,
+        obs_std,
+        acs_mean,
+        acs_std,
+        delta_mean,
+        delta_std,
     ):
         """
         :param obs_unnormalized: Unnormalized observations
@@ -77,7 +76,9 @@ class FFModel(nn.Module, BaseModel):
             2. `delta_pred_normalized` which is the normalized (i.e. not
                 unnormalized) output of the delta network. This is needed
         """
-        self.update_statistics(obs_mean, obs_std, acs_mean, acs_std, delta_mean, delta_std)
+        self.update_statistics(
+            obs_mean, obs_std, acs_mean, acs_std, delta_mean, delta_std
+        )
         # normalize input data to mean 0, std 1
         obs_normalized = (obs_unnormalized - self.obs_mean) / self.obs_std
         acs_normalized = (acs_unnormalized - self.acs_mean) / self.acs_std
@@ -88,7 +89,9 @@ class FFModel(nn.Module, BaseModel):
         # Hint: as described in the PDF, the output of the network is the
         # *normalized change* in state, i.e. normalized(s_t+1 - s_t).
         delta_pred_normalized = self.delta_network(concatenated_input)
-        next_obs_pred = obs_unnormalized + (delta_pred_normalized * self.delta_std + self.delta_mean)
+        next_obs_pred = obs_unnormalized + (
+            delta_pred_normalized * self.delta_std + self.delta_mean
+        )
         return next_obs_pred, delta_pred_normalized
 
     def get_prediction(self, obs, acs, data_statistics):
@@ -108,7 +111,9 @@ class FFModel(nn.Module, BaseModel):
         # DONE(Q1) get the predicted next-states (s_t+1) as a numpy array
         # Hint: `self(...)` returns a tuple, but you only need to use one of the
         # outputs.
-        prediction, delta = self(ptu.from_numpy(obs), ptu.from_numpy(acs), **data_statistics)
+        prediction, delta = self(
+            ptu.from_numpy(obs), ptu.from_numpy(acs), **data_statistics
+        )
         return ptu.to_numpy(prediction)
 
     def update(self, observations, actions, next_observations, data_statistics):
@@ -130,13 +135,17 @@ class FFModel(nn.Module, BaseModel):
         # Hint: you should use `data_statistics['delta_mean']` and
         # `data_statistics['delta_std']`, which keep track of the mean
         # and standard deviation of the model.
-        target = ((next_observations - observations) - data_statistics["delta_mean"] ) / data_statistics["delta_std"]
+        target = (
+            (next_observations - observations) - data_statistics["delta_mean"]
+        ) / data_statistics["delta_std"]
         target = ptu.from_numpy(target)
 
         # TODO(Q1) compute the loss
         # Hint: `self(...)` returns a tuple, but you only need to use one of the
         # outputs.
-        delta_pred = self(ptu.from_numpy(observations), ptu.from_numpy(actions), **data_statistics)[1]
+        delta_pred = self(
+            ptu.from_numpy(observations), ptu.from_numpy(actions), **data_statistics
+        )[1]
         loss = self.loss(delta_pred, target)
 
         self.optimizer.zero_grad()
@@ -144,5 +153,5 @@ class FFModel(nn.Module, BaseModel):
         self.optimizer.step()
 
         return {
-            'Training Loss': ptu.to_numpy(loss),
+            "Training Loss": ptu.to_numpy(loss),
         }

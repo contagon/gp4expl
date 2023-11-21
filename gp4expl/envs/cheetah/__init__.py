@@ -1,1 +1,1 @@
-from cs16831.hw4_part1.envs.cheetah.cheetah import HalfCheetahEnv
+from gp4expl.envs.cheetah.cheetah import HalfCheetahEnv
