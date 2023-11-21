@@ -10,7 +10,6 @@ import numpy as np
 import torch
 
 from gp4expl.agents.mb_agent import MBAgent
-from gp4expl.agents.mbpo_agent import MBPOAgent
 from gp4expl.infrastructure import pytorch_util as ptu
 from gp4expl.infrastructure import utils
 from gp4expl.infrastructure.logger import Logger
@@ -51,7 +50,7 @@ class RL_Trainer(object):
             self.env = gym.make(self.params["env_name"])
         else:
             self.env = gym.make(self.params["env_name"], render_mode="rgb_array")
-        self.env.seed(seed)
+        self.env.reset(seed=seed)
 
         # import plotting (locally if 'obstacles' env)
         if not (self.params["env_name"] == "obstacles-hw4_part1-v0"):
@@ -154,7 +153,7 @@ class RL_Trainer(object):
             self.total_envsteps += envsteps_this_batch
 
             # add collected data to replay buffer
-            if isinstance(self.agent, MBAgent) or isinstance(self.agent, MBPOAgent):
+            if isinstance(self.agent, MBAgent):
                 self.agent.add_to_replay_buffer(
                     paths, add_sl_noise=self.params["add_sl_noise"]
                 )
@@ -166,21 +165,9 @@ class RL_Trainer(object):
                 print("\nTraining agent...")
             all_logs = self.train_agent()
 
-            # if doing MBPO, train the model free component
-            if isinstance(self.agent, MBPOAgent):
-                for _ in range(self.sac_params["n_iter"]):
-                    if self.params["mbpo_rollout_length"] > 0:
-                        # TODO(Q6): Collect trajectory of length self.params['mbpo_rollout_length'] from the
-                        # learned dynamics model. Add this trajectory to the correct replay buffer.
-                        # HINT: Look at collect_model_trajectory and add_to_replay_buffer from MBPOAgent.
-                        # HINT: Use the from_model argument to ensure the paths are added to the correct buffer.
-                        pass
-                    # train the SAC agent
-                    self.train_sac_agent()
-
             # if there is a model, log model predictions
-            if isinstance(self.agent, MBAgent) and itr == 0:
-                self.log_model_predictions(itr, all_logs)
+            # if isinstance(self.agent, MBAgent) and itr == 0:
+            #     self.log_model_predictions(itr, all_logs)
 
             # log/save
             if self.log_video or self.logmetrics:
@@ -254,14 +241,6 @@ class RL_Trainer(object):
             )
             all_logs.append(train_log)
         return all_logs
-
-    def train_sac_agent(self):
-        # TODO: Train the SAC component of the MBPO agent.
-        # For self.sac_params['num_agent_train_steps_per_iter']:
-        # 1) sample a batch of data of size self.sac_params['train_batch_size'] with self.agent.sample_sac
-        # 2) train the SAC agent self.agent.train_sac
-        # HINT: This will look similar to train_agent above.
-        pass
 
     ####################################
     ####################################

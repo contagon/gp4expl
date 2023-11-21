@@ -63,7 +63,7 @@ class MPCPolicy(BasePolicy):
             )
             return random_action_sequences
         elif self.sample_strategy == "cem":
-            # TODO(Q5): Implement action selection using CEM.
+            # DONE(Q5): Implement action selection using CEM.
             # Begin with randomly selected actions, then refine the sampling distribution
             # iteratively as described in Section 3.3, "Iterative Random-Shooting with Refinement" of
             # https://arxiv.org/pdf/1909.11652.pdf
@@ -100,7 +100,7 @@ class MPCPolicy(BasePolicy):
                     + (1 - self.cem_alpha) * cem_std
                 )
 
-            # TODO(Q5): Set `cem_action` to the appropriate action chosen by CEM
+            # DONE(Q5): Set `cem_action` to the appropriate action chosen by CEM
             cem_action = actions_best[0]
 
             return cem_action[None]

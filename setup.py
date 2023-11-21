@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(
-    name="cs16831",
+    name="gp4expl",
     version="0.1.0",
-    packages=["cs16831"],
+    packages=["gp4expl"],
 )

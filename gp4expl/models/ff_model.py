@@ -131,7 +131,7 @@ class FFModel(nn.Module, BaseModel):
              - 'delta_std'
         :return:
         """
-        # TODO(Q1) compute the normalized target for the model.
+        # DONE(Q1) compute the normalized target for the model.
         # Hint: you should use `data_statistics['delta_mean']` and
         # `data_statistics['delta_std']`, which keep track of the mean
         # and standard deviation of the model.
@@ -140,7 +140,7 @@ class FFModel(nn.Module, BaseModel):
         ) / data_statistics["delta_std"]
         target = ptu.from_numpy(target)
 
-        # TODO(Q1) compute the loss
+        # DONE(Q1) compute the loss
         # Hint: `self(...)` returns a tuple, but you only need to use one of the
         # outputs.
         delta_pred = self(
