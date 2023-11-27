@@ -22,3 +22,8 @@ def register_envs():
         entry_point="gp4expl.envs.invpend:MyInvertedPendulum",
         max_episode_steps=1000,
     )
+    register(
+        id="double-inverted-pendulum",
+        entry_point="gp4expl.envs.invdoublepend:MyInvertedDoublePendulum",
+        max_episode_steps=1000,
+    )

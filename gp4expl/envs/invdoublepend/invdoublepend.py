@@ -1,8 +1,8 @@
 import numpy as np
 
-from gym.envs.mujoco.inverted_pendulum_v4 import InvertedPendulumEnv
+from gym.envs.mujoco.inverted_double_pendulum_v4 import InvertedDoublePendulumEnv
 
-class MyInvertedPendulum(InvertedPendulumEnv):
+class MyInvertedDoublePendulum(InvertedDoublePendulumEnv):
     def get_reward(self, observations, actions):
         """get reward/s of given (observations, actions) datapoint or datapoints
 
@@ -23,18 +23,21 @@ class MyInvertedPendulum(InvertedPendulumEnv):
         else:
             batch_mode = True
 
-        terminated = np.logical_and(
-            np.isfinite(observations).all(axis=-1),
-            np.abs(observations[:,1]) > 0.2
-        )
+        r = 0.6
+        p, sin1, sin2, cos1, cos2, v, v1, v2, _, _, _ = observations.T
 
-        # Reward if we're still standing
-        # reward = (~terminated).astype(np.int32)
-        
-        # Reward based on how upright we still are
-        reward = np.full_like(terminated, 1) - np.abs(observations[:,1])
-        # reward = (~terminated).astype(np.float32) - np.abs(observations[:,1])
+        t1 = np.arctan2(sin1, cos1)
+        t2 = np.arctan2(sin2, cos2)
 
+        x = r*sin1 + r*np.sin(t1 + t2)
+        y = r*cos1 + r*np.cos(t1 + t2)
+
+        dist_penalty = 0.01 * x**2 + (y - 2) ** 2
+        vel_penalty = 1e-3 * v1**2 + 5e-3 * v2**2
+        alive_bonus = 10
+
+        reward = alive_bonus - dist_penalty - vel_penalty
+        terminated = y <= 1.0
 
         if not batch_mode:
             reward = reward[0]

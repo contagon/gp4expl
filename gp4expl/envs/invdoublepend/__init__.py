@@ -1,0 +1,1 @@
+from gp4expl.envs.invdoublepend.invdoublepend import MyInvertedDoublePendulum
