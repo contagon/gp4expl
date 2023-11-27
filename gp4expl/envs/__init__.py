@@ -17,3 +17,8 @@ def register_envs():
         entry_point="gp4expl.envs.reacher:Reacher7DOFEnv",
         max_episode_steps=500,
     )
+    register(
+        id="my-inverted-pendulum",
+        entry_point="gp4expl.envs.invpend:MyInvertedPendulum",
+        max_episode_steps=1000,
+    )
