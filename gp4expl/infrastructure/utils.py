@@ -22,7 +22,8 @@ def calculate_mean_prediction_error(env, action_sequence, models, data_statistic
     pred_states = np.squeeze(pred_states)
 
     # mpe
-    mpe = mean_squared_error(pred_states, true_states)
+    l = true_states.shape[0]
+    mpe = mean_squared_error(pred_states[:l], true_states)
 
     return mpe, true_states, pred_states
 
@@ -89,6 +90,8 @@ def sample_trajectory(
         ac = ac[0]
         acs.append(ac)
         ob, rew, done, _ = env.step(ac)
+        # print(rew, env.get_reward(ob, ac))
+        # quit()
         # add the observation after taking a step to next_obs
         next_obs.append(ob)
         rewards.append(rew)

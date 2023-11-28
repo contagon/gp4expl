@@ -1,8 +1,31 @@
 import numpy as np
 
 from gym.envs.mujoco.inverted_double_pendulum_v4 import InvertedDoublePendulumEnv
+from gym.spaces import Box
+from gym.envs.mujoco import MujocoEnv
+from gym import utils
 
 class MyInvertedDoublePendulum(InvertedDoublePendulumEnv):
+    def __init__(self, **kwargs):
+        observation_space = Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float64)
+        MujocoEnv.__init__(
+            self,
+            "inverted_double_pendulum.xml",
+            5,
+            observation_space=observation_space,
+            **kwargs
+        )
+        utils.EzPickle.__init__(self, **kwargs)
+
+    def _get_obs(self):
+        return np.concatenate(
+            [
+                self.data.qpos[:1],  # cart x pos
+                self.data.qpos[1:],  # link angles
+                np.clip(self.data.qvel, -10, 10), # cart & angle velocity
+            ]
+        ).ravel()
+
     def get_reward(self, observations, actions):
         """get reward/s of given (observations, actions) datapoint or datapoints
 
@@ -24,15 +47,12 @@ class MyInvertedDoublePendulum(InvertedDoublePendulumEnv):
             batch_mode = True
 
         r = 0.6
-        p, sin1, sin2, cos1, cos2, v, v1, v2, _, _, _ = observations.T
+        p, t1, t2, v, v1, v2 = observations.T
 
-        t1 = np.arctan2(sin1, cos1)
-        t2 = np.arctan2(sin2, cos2)
+        x = r*np.sin(t1) + r*np.sin(t1 + t2)
+        y = r*np.cos(t1) + r*np.cos(t1 + t2)
 
-        x = r*sin1 + r*np.sin(t1 + t2)
-        y = r*cos1 + r*np.cos(t1 + t2)
-
-        dist_penalty = 0.01 * x**2 + (y - 2) ** 2
+        dist_penalty = x**2 + (y - 1.2) ** 2
         vel_penalty = 1e-3 * v1**2 + 5e-3 * v2**2
         alive_bonus = 10
 
