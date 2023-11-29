@@ -41,7 +41,7 @@ class MyInvertedDoublePendulum(MujocoEnv, utils.EzPickle):
     def reset_model(self):
         # Start at the lowest point
         self.set_state(
-            np.array([0, 0, 0])
+            np.array([0, np.pi, 0])
             + self.np_random.uniform(low=-0.1, high=0.1, size=self.model.nq),
             self.init_qvel + self.np_random.standard_normal(self.model.nv) * 0.1,
         )
@@ -96,7 +96,7 @@ class MyInvertedDoublePendulum(MujocoEnv, utils.EzPickle):
         p, t1, t2, v, v1, v2 = observations.T
         x, y = self.theta2xy(observations)
 
-        dist_penalty = x**2 + (y - 1.2) ** 2
+        dist_penalty = 0.1 * x**2 + (y - 1.2) ** 2
         vel_penalty = 1e-3 * v1**2 + 5e-3 * v2**2
         alive_bonus = 10
 
@@ -106,7 +106,6 @@ class MyInvertedDoublePendulum(MujocoEnv, utils.EzPickle):
             (observations[:, 3] < 5),
             (observations[:, 4:] < 10).all(axis=-1),
         )
-        terminated = y <= 1
 
         if not batch_mode:
             reward = reward[0]
