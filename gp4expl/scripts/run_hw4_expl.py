@@ -60,6 +60,7 @@ def main():
             "PointmassMedium-v0",
             "PointmassHard-v0",
             "PointmassVeryHard-v0",
+            "double-inverted-pendulum",
         ),
     )
 
@@ -98,7 +99,7 @@ def main():
     params["num_agent_train_steps_per_iter"] = 1
     params["num_critic_updates_per_agent_update"] = 1
     params["exploit_weight_schedule"] = ConstantSchedule(1.0)
-    params["video_log_freq"] = -1  # This param is not used for DQN
+    params["video_log_freq"] = 1  # This param is not used for DQN
     params["num_timesteps"] = 50000
     params["learning_starts"] = 2000
     params["eps"] = 0.2
@@ -113,6 +114,10 @@ def main():
     if params["env_name"] == "PointmassHard-v0":
         params["ep_len"] = 100
     if params["env_name"] == "PointmassVeryHard-v0":
+        params["ep_len"] = 200
+    if params["env_name"] == "inverted-pendulum":
+        params["ep_len"] = 200
+    if params["env_name"] == "double-inverted-pendulum":
         params["ep_len"] = 200
 
     if params["use_rnd"]:

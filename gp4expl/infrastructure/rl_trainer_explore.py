@@ -21,6 +21,7 @@ from gp4expl.infrastructure.dqn_utils import (
     get_wrapper_by_name,
     register_custom_envs,
 )
+from gp4expl.envs import register_envs
 
 # register all of our envs
 import gp4expl.envs
@@ -57,14 +58,16 @@ class RL_Trainer(object):
 
         # Make the gym environment
         register_custom_envs()
+        register_envs()
         self.env = gym.make(self.params["env_name"])
         self.eval_env = gym.make(self.params["env_name"])
         if not ("pointmass" in self.params["env_name"]):
-            import matplotlib
+            pass
+            # import matplotlib
 
-            matplotlib.use("Agg")
-            self.env.set_logdir(self.params["logdir"] + "/expl_")
-            self.eval_env.set_logdir(self.params["logdir"] + "/eval_")
+            # matplotlib.use("Agg")
+            # self.env.set_logdir(self.params["logdir"] + "/expl_")
+            # self.eval_env.set_logdir(self.params["logdir"] + "/eval_")
 
         if self.params["video_log_freq"] > 0:
             self.episode_trigger = (
@@ -244,10 +247,10 @@ class RL_Trainer(object):
             all_logs = self.train_agent()
 
             # Log densities and output trajectories
-            if isinstance(self.agent, ExplorationOrExploitationAgent) and (
-                itr % print_period == 0
-            ):
-                self.dump_density_graphs(itr)
+            # if isinstance(self.agent, ExplorationOrExploitationAgent) and (
+            #     itr % print_period == 0
+            # ):
+            #     self.dump_density_graphs(itr)
 
             # log/save
             if self.logvideo or self.logmetrics:

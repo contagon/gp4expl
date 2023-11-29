@@ -126,9 +126,9 @@ def main():
     if params["env_name"] == "obstacles-hw4_part1-v0":
         params["ep_len"] = 100
     if params["env_name"] == "inverted-pendulum":
-        params["ep_len"] = 1000
+        params["ep_len"] = 200
     if params["env_name"] == "double-inverted-pendulum":
-        params["ep_len"] = 1000
+        params["ep_len"] = 200
 
     ##################################
     ### CREATE DIRECTORY FOR LOGGING

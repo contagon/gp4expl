@@ -1,13 +1,15 @@
-from cs16831.hw4_part2.infrastructure import pytorch_util as ptu
+from gp4expl.infrastructure import pytorch_util as ptu
 from .base_exploration_model import BaseExplorationModel
 import torch.optim as optim
 from torch import nn
 import torch
 
+
 def init_method_1(model):
     if isinstance(model, nn.Linear):
         model.weight.data.uniform_()
         model.bias.data.uniform_()
+
 
 def init_method_2(model):
     if isinstance(model, nn.Linear):
@@ -18,24 +20,27 @@ def init_method_2(model):
 class RNDModel(nn.Module, BaseExplorationModel):
     def __init__(self, hparams, optimizer_spec, **kwargs):
         super().__init__(**kwargs)
-        self.ob_dim = hparams['ob_dim']
-        self.output_size = hparams['rnd_output_size']
-        self.n_layers = hparams['rnd_n_layers']
-        self.size = hparams['rnd_size']
+        self.ob_dim = hparams["ob_dim"]
+        self.output_size = hparams["rnd_output_size"]
+        self.n_layers = hparams["rnd_n_layers"]
+        self.size = hparams["rnd_size"]
         self.optimizer_spec = optimizer_spec
 
         # <Done>: Create two neural networks:
         # 1) f, the random function we are trying to learn
         # 2) f_hat, the function we are using to learn f
-        self.f = ptu.build_mlp(self.ob_dim, self.output_size, self.n_layers, self.size).to(ptu.device)
+        self.f = ptu.build_mlp(
+            self.ob_dim, self.output_size, self.n_layers, self.size
+        ).to(ptu.device)
         self.f.apply(init_method_1)
-        
-        self.f_hat = ptu.build_mlp(self.ob_dim, self.output_size, self.n_layers, self.size).to(ptu.device)
+
+        self.f_hat = ptu.build_mlp(
+            self.ob_dim, self.output_size, self.n_layers, self.size
+        ).to(ptu.device)
         self.f_hat.apply(init_method_2)
 
         self.optimizer = self.optimizer_spec.constructor(
-            self.f_hat.parameters(),
-            **self.optimizer_spec.optim_kwargs
+            self.f_hat.parameters(), **self.optimizer_spec.optim_kwargs
         )
         self.learning_rate_scheduler = optim.lr_scheduler.LambdaLR(
             self.optimizer,
@@ -50,7 +55,6 @@ class RNDModel(nn.Module, BaseExplorationModel):
         target = self.f(ob_no).detach()
         pred = self.f_hat(ob_no)
         return self.loss(pred, target).sum(dim=1)
-
 
     def forward_np(self, ob_no):
         ob_no = ptu.from_numpy(ob_no)

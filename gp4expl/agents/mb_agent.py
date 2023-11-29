@@ -26,7 +26,6 @@ class MBAgent(BaseAgent):
 
         self.actor = MPCPolicy(
             self.env,
-            ac_dim=self.agent_params["ac_dim"],
             dyn_models=self.dyn_models,
             horizon=self.agent_params["mpc_horizon"],
             N=self.agent_params["mpc_num_action_sequences"],

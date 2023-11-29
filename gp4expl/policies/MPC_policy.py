@@ -7,7 +7,6 @@ class MPCPolicy(BasePolicy):
     def __init__(
         self,
         env,
-        ac_dim,
         dyn_models,
         horizon,
         N,
@@ -15,6 +14,7 @@ class MPCPolicy(BasePolicy):
         cem_iterations=4,
         cem_num_elites=5,
         cem_alpha=1,
+        reward_func=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -28,9 +28,13 @@ class MPCPolicy(BasePolicy):
 
         self.ob_dim = self.env.observation_space.shape[0]
 
+        self.reward_func = reward_func
+        if self.reward_func is None:
+            self.reward_func = self.env.get_reward
+
         # action space
         self.ac_space = self.env.action_space
-        self.ac_dim = ac_dim
+        self.ac_dim = self.ac_space.shape[0]
         self.low = self.ac_space.low
         self.high = self.ac_space.high
 
@@ -50,6 +54,9 @@ class MPCPolicy(BasePolicy):
                 f"CEM params: alpha={self.cem_alpha}, "
                 + f"num_elites={self.cem_num_elites}, iterations={self.cem_iterations}"
             )
+
+    def set_reward_func(self, func):
+        self.reward_func = func
 
     def sample_action_sequences(self, num_sequences, horizon, obs=None):
         if self.sample_strategy == "random" or (
@@ -175,7 +182,7 @@ class MPCPolicy(BasePolicy):
         predicted_obs = np.zeros((N, H + 1, D_obs))
         predicted_obs[:, 0] = obs
         for j in range(H):
-            sum_of_rewards += self.env.get_reward(
+            sum_of_rewards += self.reward_func(
                 predicted_obs[:, j], candidate_action_sequences[:, j]
             )[0]
             predicted_obs[:, j + 1] = model.get_prediction(

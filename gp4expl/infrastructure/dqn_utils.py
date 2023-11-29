@@ -111,7 +111,26 @@ def get_env_kwargs(env_name):
         )
 
     else:
-        raise NotImplementedError
+
+        def pointmass_empty_wrapper(env):
+            return env
+
+        kwargs = {
+            "optimizer_spec": pointmass_optimizer(),
+            "q_func": create_lander_q_network,
+            "replay_buffer_size": int(1e5),
+            "gamma": 0.95,
+            "learning_freq": 1,
+            "frame_history_len": 1,
+            "target_update_freq": 300,
+            "grad_norm_clipping": 10,
+            "lander": False,
+            "num_timesteps": 50000,
+            "env_wrappers": pointmass_empty_wrapper,
+        }
+        kwargs["exploration_schedule"] = lander_exploration_schedule(
+            kwargs["num_timesteps"]
+        )
 
     return kwargs
 
