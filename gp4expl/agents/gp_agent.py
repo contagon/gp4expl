@@ -14,9 +14,9 @@ class GPAgent(BaseAgent):
         self.ensemble_size = self.agent_params["ensemble_size"]
         self.ensemble_size = 1
 
-        self.dyn_model = GPModel()
+        self.dyn_models = []
         for i in range(self.ensemble_size):
-            model = GPModel()
+            model = GPModel(self.agent_params["ac_dim"], self.agent_params["ob_dim"])
             self.dyn_models.append(model)
 
         self.actor = MPCPolicy(

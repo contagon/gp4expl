@@ -3,6 +3,7 @@ import time
 
 from gp4expl.infrastructure.rl_trainer import RL_Trainer
 from gp4expl.agents.mb_agent import MBAgent
+from gp4expl.agents.gp_agent import GPAgent
 
 import warnings
 
@@ -39,7 +40,7 @@ class MB_Trainer(object):
         agent_params = {**computation_graph_args, **train_args, **controller_args}
 
         self.params = params
-        self.params["agent_class"] = MBAgent
+        self.params["agent_class"] = GPAgent
         self.params["agent_params"] = agent_params
 
         ################
@@ -121,20 +122,13 @@ def main():
     ### CREATE DIRECTORY FOR LOGGING
     ##################################
 
-    logdir_prefix = "hw4_"  # keep for autograder
-
     data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../data")
 
     if not (os.path.exists(data_path)):
         os.makedirs(data_path)
 
     logdir = (
-        logdir_prefix
-        + args.exp_name
-        + "_"
-        + args.env_name
-        + "_"
-        + time.strftime("%d-%m-%Y_%H-%M-%S")
+        args.exp_name + "_" + args.env_name + "_" + time.strftime("%d-%m-%Y_%H-%M-%S")
     )
     logdir = os.path.join(data_path, logdir)
     params["logdir"] = logdir

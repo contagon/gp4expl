@@ -1,14 +1,18 @@
-from torch import nn
-import torch
-from torch import optim
+import numpy as np
 from gp4expl.models.base_model import BaseModel
 from gp4expl.infrastructure.utils import normalize, unnormalize
 from gp4expl.infrastructure import pytorch_util as ptu
+from goppy import OnlineGP, SquaredExponentialKernel
 
 
-class GPModel(nn.Module, BaseModel):
-    def __init__(self):
+class GPModel:
+    def __init__(self, ac_dim, ob_dim):
         super(GPModel, self).__init__()
+
+        self.ac_dim = ac_dim
+        self.ob_dim = ob_dim
+
+        self.delta_gp = OnlineGP(SquaredExponentialKernel(0.3), noise_var=0.1)
 
         self.obs_mean = None
         self.obs_std = None
@@ -26,12 +30,12 @@ class GPModel(nn.Module, BaseModel):
         delta_mean,
         delta_std,
     ):
-        self.obs_mean = ptu.from_numpy(obs_mean)
-        self.obs_std = ptu.from_numpy(obs_std)
-        self.acs_mean = ptu.from_numpy(acs_mean)
-        self.acs_std = ptu.from_numpy(acs_std)
-        self.delta_mean = ptu.from_numpy(delta_mean)
-        self.delta_std = ptu.from_numpy(delta_std)
+        self.obs_mean = obs_mean
+        self.obs_std = obs_std
+        self.acs_mean = acs_mean
+        self.acs_std = acs_std
+        self.delta_mean = delta_mean
+        self.delta_std = delta_std
 
     def forward(
         self,
@@ -66,14 +70,14 @@ class GPModel(nn.Module, BaseModel):
         obs_normalized = (obs_unnormalized - self.obs_mean) / self.obs_std
         acs_normalized = (acs_unnormalized - self.acs_mean) / self.acs_std
         # predicted change in obs
-        concatenated_input = torch.cat([obs_normalized, acs_normalized], dim=1)
+        concatenated_input = np.hstack([obs_normalized, acs_normalized])
 
         # DONE(Q1) compute delta_pred_normalized and next_obs_pred
         # Hint: as described in the PDF, the output of the network is the
         # *normalized change* in state, i.e. normalized(s_t+1 - s_t).
-        delta_pred_normalized = self.delta_network(concatenated_input)
+        delta_pred_normalized = self.delta_gp.predict(concatenated_input, what="mean")
         next_obs_pred = obs_unnormalized + (
-            delta_pred_normalized * self.delta_std + self.delta_mean
+            delta_pred_normalized["mean"] * self.delta_std + self.delta_mean
         )
         return next_obs_pred, delta_pred_normalized
 
@@ -94,10 +98,8 @@ class GPModel(nn.Module, BaseModel):
         # DONE(Q1) get the predicted next-states (s_t+1) as a numpy array
         # Hint: `self(...)` returns a tuple, but you only need to use one of the
         # outputs.
-        prediction, delta = self(
-            ptu.from_numpy(obs), ptu.from_numpy(acs), **data_statistics
-        )
-        return ptu.to_numpy(prediction)
+        prediction, delta = self.forward(obs, acs, **data_statistics)
+        return prediction
 
     def update(self, observations, actions, next_observations, data_statistics):
         """
@@ -114,27 +116,18 @@ class GPModel(nn.Module, BaseModel):
              - 'delta_std'
         :return:
         """
-        # DONE(Q1) compute the normalized target for the model.
-        # Hint: you should use `data_statistics['delta_mean']` and
-        # `data_statistics['delta_std']`, which keep track of the mean
-        # and standard deviation of the model.
-        target = (
-            (next_observations - observations) - data_statistics["delta_mean"]
-        ) / data_statistics["delta_std"]
-        target = ptu.from_numpy(target)
+        self.update_statistics(**data_statistics)
 
-        # DONE(Q1) compute the loss
-        # Hint: `self(...)` returns a tuple, but you only need to use one of the
-        # outputs.
-        delta_pred = self(
-            ptu.from_numpy(observations), ptu.from_numpy(actions), **data_statistics
-        )[1]
-        loss = self.loss(delta_pred, target)
+        obs_normalized = (observations - self.obs_mean) / self.obs_std
+        acs_normalized = (actions - self.acs_mean) / self.acs_std
+        # predicted change in obs
+        concatenated_input = np.hstack([obs_normalized, acs_normalized])
 
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+        obs_next_normalized = (next_observations - self.obs_mean) / self.obs_std
+
+        self.delta_gp.add(concatenated_input, obs_next_normalized)
+        print("TRAINING", self.delta_gp.x_train.shape)
 
         return {
-            "Training Loss": ptu.to_numpy(loss),
+            "Training Loss": 0,
         }

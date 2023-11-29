@@ -96,7 +96,7 @@ class MyInvertedDoublePendulum(MujocoEnv, utils.EzPickle):
         p, t1, t2, v, v1, v2 = observations.T
         x, y = self.theta2xy(observations)
 
-        dist_penalty = 0.1 * x**2 + (y - 1.2) ** 2
+        dist_penalty = x**2 + (y - 1.2) ** 2
         vel_penalty = 1e-3 * v1**2 + 5e-3 * v2**2
         alive_bonus = 10
 
