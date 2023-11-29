@@ -123,7 +123,6 @@ class GPModel:
              - 'delta_std'
         :return:
         """
-        print("TRAINING", observations.shape)
         self.update_statistics(**data_statistics)
 
         obs_normalized = (observations - self.obs_mean) / self.obs_std

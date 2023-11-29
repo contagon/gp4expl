@@ -153,12 +153,9 @@ class RL_Trainer(object):
             self.total_envsteps += envsteps_this_batch
 
             # add collected data to replay buffer
-            if isinstance(self.agent, MBAgent):
-                self.agent.add_to_replay_buffer(
-                    paths, add_sl_noise=self.params["add_sl_noise"]
-                )
-            else:
-                self.agent.add_to_replay_buffer(paths)
+            self.agent.add_to_replay_buffer(
+                paths, add_sl_noise=self.params["add_sl_noise"]
+            )
 
             # train agent (using sampled data from replay buffer)
             if itr % print_period == 0:
@@ -166,8 +163,7 @@ class RL_Trainer(object):
             all_logs = self.train_agent()
 
             # if there is a model, log model predictions
-            if isinstance(self.agent, MBAgent):
-                self.log_model_predictions(itr, all_logs)
+            self.log_model_predictions(itr, all_logs)
 
             # log/save
             if self.log_video or self.logmetrics:

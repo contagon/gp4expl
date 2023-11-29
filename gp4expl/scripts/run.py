@@ -135,7 +135,7 @@ def main():
     if not (os.path.exists(logdir)):
         os.makedirs(logdir)
 
-    print("\n\n\nLOGGING TO: ", logdir, "\n\n\n")
+    print("\nLOGGING TO: ", logdir, "\n")
 
     ###################
     ### RUN TRAINING
