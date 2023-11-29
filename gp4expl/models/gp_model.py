@@ -1,11 +1,8 @@
 import numpy as np
-from gp4expl.models.base_model import BaseModel
-from gp4expl.infrastructure.utils import normalize, unnormalize
-from gp4expl.infrastructure import pytorch_util as ptu
-from goppy import OnlineGP, SquaredExponentialKernel
 
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel as W
+from sklearn.preprocessing import StandardScaler
 
 
 class GPModel:
@@ -19,30 +16,8 @@ class GPModel:
         self.y = np.zeros((0, ob_dim))
         self.kernel = C() * RBF() + W()
         self.n_restarts_optimizer = 10
+        self.scalar = StandardScaler()
         self.delta_gp = None
-
-        self.obs_mean = None
-        self.obs_std = None
-        self.acs_mean = None
-        self.acs_std = None
-        self.delta_mean = None
-        self.delta_std = None
-
-    def update_statistics(
-        self,
-        obs_mean,
-        obs_std,
-        acs_mean,
-        acs_std,
-        delta_mean,
-        delta_std,
-    ):
-        self.obs_mean = obs_mean
-        self.obs_std = obs_std
-        self.acs_mean = acs_mean
-        self.acs_std = acs_std
-        self.delta_mean = delta_mean
-        self.delta_std = delta_std
 
     def forward(
         self,
@@ -70,23 +45,16 @@ class GPModel:
             2. `delta_pred_normalized` which is the normalized (i.e. not
                 unnormalized) output of the delta network. This is needed
         """
-        self.update_statistics(
-            obs_mean, obs_std, acs_mean, acs_std, delta_mean, delta_std
-        )
-        # normalize input data to mean 0, std 1
-        obs_normalized = (obs_unnormalized - self.obs_mean) / self.obs_std
-        acs_normalized = (acs_unnormalized - self.acs_mean) / self.acs_std
         # predicted change in obs
-        concatenated_input = np.hstack([obs_normalized, acs_normalized])
+        concatenated_input = np.hstack([obs_unnormalized, acs_unnormalized])
 
         # DONE(Q1) compute delta_pred_normalized and next_obs_pred
         # Hint: as described in the PDF, the output of the network is the
         # *normalized change* in state, i.e. normalized(s_t+1 - s_t).
-        delta_pred_normalized = self.delta_gp.predict(concatenated_input)
-        next_obs_pred = obs_unnormalized + (
-            delta_pred_normalized * self.delta_std + self.delta_mean
-        )
-        return next_obs_pred, delta_pred_normalized
+        X = self.scalar.transform(concatenated_input)
+        next_obs_pred = self.delta_gp.predict(X) + obs_unnormalized
+
+        return next_obs_pred, None
 
     def get_prediction(self, obs, acs, data_statistics):
         """
@@ -123,15 +91,10 @@ class GPModel:
              - 'delta_std'
         :return:
         """
-        print("TRAINING", observations.shape)
-        self.update_statistics(**data_statistics)
 
-        obs_normalized = (observations - self.obs_mean) / self.obs_std
-        acs_normalized = (actions - self.acs_mean) / self.acs_std
         # predicted change in obs
-        concatenated_input = np.hstack([obs_normalized, acs_normalized])
-
-        target = ((next_observations - observations) - self.delta_mean) / self.delta_std
+        concatenated_input = np.hstack([observations, actions])
+        target = next_observations - observations
 
         self.X = np.vstack((self.X, concatenated_input))
         self.y = np.vstack((self.y, target))
@@ -140,15 +103,15 @@ class GPModel:
             self.kernel,
             n_restarts_optimizer=self.n_restarts_optimizer,
             random_state=0,
-            copy_X_train=False,
+            copy_X_train=True,
+            normalize_y=True,
         )
 
-        self.delta_gp.fit(self.X, self.y)
+        X = self.scalar.fit_transform(self.X)
+        self.delta_gp.fit(X, self.y)
 
         self.kernel = self.delta_gp.kernel_
         self.n_restarts_optimizer = 2
-
-        # print("TRAINING", self.delta_gp.x_train.shape)
 
         return {
             "Training Loss": 0,
