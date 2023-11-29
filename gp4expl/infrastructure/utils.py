@@ -87,11 +87,9 @@ def sample_trajectory(
 
         obs.append(ob)
         ac = policy.get_action(ob)
-        ac = ac[0]
+        # ac = ac[0]
         acs.append(ac)
         ob, rew, done, _ = env.step(ac)
-        # print(rew, env.get_reward(ob, ac))
-        # quit()
         # add the observation after taking a step to next_obs
         next_obs.append(ob)
         rewards.append(rew)
