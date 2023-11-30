@@ -2,23 +2,23 @@ import numpy as np
 from gp4expl.models.base_model import BaseModel
 from gp4expl.infrastructure.utils import normalize, unnormalize
 from gp4expl.infrastructure import pytorch_util as ptu
-from goppy import OnlineGP, SquaredExponentialKernel
 
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel as W
+
+import GPy
 
 
 class GPModel:
-    def __init__(self, ac_dim, ob_dim):
+    def __init__(self, ac_dim, ob_dim, num_inducing=100):
         super(GPModel, self).__init__()
 
         self.ac_dim = ac_dim
         self.ob_dim = ob_dim
+        self.num_inducing = num_inducing
 
         self.X = np.zeros((0, ac_dim + ob_dim))
         self.y = np.zeros((0, ob_dim))
-        self.kernel = C() * RBF() + W()
-        self.n_restarts_optimizer = 10
+        self.kernel = GPy.kern.RBF(ac_dim + ob_dim)
+        self.noise_var = 1e-2
         self.delta_gp = None
 
         self.obs_mean = None
@@ -82,7 +82,7 @@ class GPModel:
         # DONE(Q1) compute delta_pred_normalized and next_obs_pred
         # Hint: as described in the PDF, the output of the network is the
         # *normalized change* in state, i.e. normalized(s_t+1 - s_t).
-        delta_pred_normalized = self.delta_gp.predict(concatenated_input)
+        delta_pred_normalized, std = self.delta_gp.predict(concatenated_input)
         next_obs_pred = obs_unnormalized + (
             delta_pred_normalized * self.delta_std + self.delta_mean
         )
@@ -135,17 +135,20 @@ class GPModel:
         self.X = np.vstack((self.X, concatenated_input))
         self.y = np.vstack((self.y, target))
 
-        self.delta_gp = GaussianProcessRegressor(
+        self.delta_gp = GPy.models.SparseGPRegression(
+            self.X,
+            self.y,
             self.kernel,
-            n_restarts_optimizer=self.n_restarts_optimizer,
-            random_state=0,
-            copy_X_train=False,
+            num_inducing=self.num_inducing,
         )
+        self.delta_gp.likelihood.variance = self.noise_var
+        self.delta_gp.optimize()
 
-        self.delta_gp.fit(self.X, self.y)
+        self.kernel = self.delta_gp.kern
+        self.noise_var = self.delta_gp.likelihood.variance
 
-        self.kernel = self.delta_gp.kernel_
-        self.n_restarts_optimizer = 2
+        self.X = np.array(self.delta_gp.inducing_inputs)
+        self.y, std = self.delta_gp.predict(self.X)
 
         # print("TRAINING", self.delta_gp.x_train.shape)
 

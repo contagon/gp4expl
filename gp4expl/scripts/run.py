@@ -22,6 +22,7 @@ class MB_Trainer(object):
             "n_layers": params["n_layers"],
             "size": params["size"],
             "learning_rate": params["learning_rate"],
+            "num_inducing": params["num_inducing"],
         }
 
         train_args = {
@@ -40,7 +41,11 @@ class MB_Trainer(object):
         agent_params = {**computation_graph_args, **train_args, **controller_args}
 
         self.params = params
-        self.params["agent_class"] = GPAgent
+        if params["dynamics_model"] == "gp":
+            self.params["agent_class"] = GPAgent
+        elif params["dynamics_model"] == "nn":
+            self.params["agent_class"] = MBAgent
+
         self.params["agent_params"] = agent_params
 
         ################
@@ -68,6 +73,19 @@ def main():
     parser.add_argument("--exp_name", type=str, default="todo")
     parser.add_argument("--n_iter", "-n", type=int, default=20)
 
+    parser.add_argument(
+        "--dynamics_model", type=str, default="gp", choices=["gp", "nn"]
+    )
+
+    # GP Arguments
+    parser.add_argument("--num_inducing", type=int, default=100)
+
+    # NN Arguments
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001)
+    parser.add_argument("--n_layers", "-l", type=int, default=2)
+    parser.add_argument("--size", "-s", type=int, default=250)
+
+    # MPC Arguments
     parser.add_argument("--ensemble_size", "-e", type=int, default=3)
     parser.add_argument("--mpc_horizon", type=int, default=10)
     parser.add_argument("--mpc_num_action_sequences", type=int, default=1000)
@@ -76,25 +94,19 @@ def main():
     parser.add_argument("--cem_num_elites", type=int, default=5)
     parser.add_argument("--cem_alpha", type=float, default=1)
 
+    # RL Arguments
     parser.add_argument("--add_sl_noise", "-noise", action="store_true")
     parser.add_argument("--num_agent_train_steps_per_iter", type=int, default=1000)
-    parser.add_argument(
-        "--batch_size_initial", type=int, default=20000
-    )  # (random) steps collected on 1st iteration (put into replay buffer)
-    parser.add_argument(
-        "--batch_size", "-b", type=int, default=8000
-    )  # steps collected per train iteration (put into replay buffer)
-    parser.add_argument(
-        "--train_batch_size", "-tb", type=int, default=512
-    )  ##steps used per gradient step (used for training)
-    parser.add_argument(
-        "--eval_batch_size", "-eb", type=int, default=400
-    )  # steps collected per eval iteration
+    # (random) steps collected on 1st iteration (put into replay buffer)
+    parser.add_argument("--batch_size_initial", type=int, default=20000)
+    # steps collected per train iteration (put into replay buffer)
+    parser.add_argument("--batch_size", "-b", type=int, default=8000)
+    ##steps used per gradient step (used for training)
+    parser.add_argument("--train_batch_size", "-tb", type=int, default=512)
+    # steps collected per eval iteration
+    parser.add_argument("--eval_batch_size", "-eb", type=int, default=400)
 
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.001)
-    parser.add_argument("--n_layers", "-l", type=int, default=2)
-    parser.add_argument("--size", "-s", type=int, default=250)
-
+    # Misc Arguments
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--no_gpu", "-ngpu", action="store_true")
     parser.add_argument("--which_gpu", "-gpu_id", default=0)
