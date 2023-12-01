@@ -29,13 +29,13 @@ def calculate_mean_prediction_error(env, action_sequence, models, data_statistic
 
 
 def perform_actions(env, actions):
-    ob = env.reset()
+    ob, _ = env.reset()
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
     steps = 0
     for ac in actions:
         obs.append(ob)
         acs.append(ac)
-        ob, rew, done, _ = env.step(ac)
+        ob, rew, done, _, _ = env.step(ac)
         # add the observation after taking a step to next_obs
         next_obs.append(ob)
         rewards.append(rew)
@@ -62,7 +62,7 @@ def mean_squared_error(a, b):
 def sample_trajectory(
     env, policy, max_path_length, render=False, render_mode=("rgb_array")
 ):
-    ob = env.reset()
+    ob, _ = env.reset()
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
     steps = 0
     while True:
@@ -89,7 +89,7 @@ def sample_trajectory(
         ac = policy.get_action(ob)
         ac = ac[0]
         acs.append(ac)
-        ob, rew, done, _ = env.step(ac)
+        ob, rew, done, _, _ = env.step(ac)
         # print(rew, env.get_reward(ob, ac))
         # quit()
         # add the observation after taking a step to next_obs

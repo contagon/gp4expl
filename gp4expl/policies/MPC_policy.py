@@ -34,6 +34,8 @@ class MPCPolicy(BasePolicy):
         self.low = self.ac_space.low
         self.high = self.ac_space.high
 
+        self.reward_fun = self.env.get_reward
+
         # Sampling strategy
         allowed_sampling = ("random", "cem")
         assert (
@@ -161,7 +163,7 @@ class MPCPolicy(BasePolicy):
         # states for each dynamics model in your ensemble.
         # Once you have a sequence of predicted states from each model in
         # your ensemble, calculate the sum of rewards for each sequence
-        # using `self.env.get_reward(predicted_obs, action)`
+        # using `self.reward_fun(predicted_obs, action)`
         # You should sum across `self.horizon` time step.
         # Hint: you should use model.get_prediction and you shouldn't need
         #       to import pytorch in this file.
@@ -175,7 +177,7 @@ class MPCPolicy(BasePolicy):
         predicted_obs = np.zeros((N, H + 1, D_obs))
         predicted_obs[:, 0] = obs
         for j in range(H):
-            sum_of_rewards += self.env.get_reward(
+            sum_of_rewards += self.reward_fun(
                 predicted_obs[:, j], candidate_action_sequences[:, j]
             )[0]
             predicted_obs[:, j + 1] = model.get_prediction(
