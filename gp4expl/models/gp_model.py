@@ -64,7 +64,7 @@ class GPModel:
         :param acs_std: Standard deviation of actions
         :param delta_mean: Mean of state difference `s_t+1 - s_t`.
         :param delta_std: Standard deviation of state difference `s_t+1 - s_t`.
-        :return: tuple `(next_obs_pred, delta_pred_normalized)`
+        :return: tuple `(next_obs_pred, delta_pred_normalized, std)`
         This forward function should return a tuple of two items
             1. `next_obs_pred` which is the predicted `s_t+1`
             2. `delta_pred_normalized` which is the normalized (i.e. not
@@ -86,7 +86,7 @@ class GPModel:
         next_obs_pred = obs_unnormalized + (
             delta_pred_normalized * self.delta_std + self.delta_mean
         )
-        return next_obs_pred, delta_pred_normalized
+        return next_obs_pred, delta_pred_normalized, std
 
     def get_prediction(self, obs, acs, data_statistics):
         """
@@ -105,8 +105,28 @@ class GPModel:
         # DONE(Q1) get the predicted next-states (s_t+1) as a numpy array
         # Hint: `self(...)` returns a tuple, but you only need to use one of the
         # outputs.
-        prediction, delta = self.forward(obs, acs, **data_statistics)
+        prediction, delta, std = self.forward(obs, acs, **data_statistics)
         return prediction
+
+    def get_reward(self, obs, acs, data_statistics):
+        """
+        :param obs: numpy array of observations (s_t)
+        :param acs: numpy array of actions (a_t)
+        :param data_statistics: A dictionary with the following keys (each with
+        a numpy array as the value):
+             - 'obs_mean'
+             - 'obs_std'
+             - 'acs_mean'
+             - 'acs_std'
+             - 'delta_mean'
+             - 'delta_std'
+        :return: a numpy array of the predicted next-states (s_t+1)
+        """
+        # DONE(Q1) get the predicted next-states (s_t+1) as a numpy array
+        # Hint: `self(...)` returns a tuple, but you only need to use one of the
+        # outputs.
+        _, _, std = self.forward(obs, acs, **data_statistics)
+        return std
 
     def update(self, observations, actions, next_observations, data_statistics):
         """
