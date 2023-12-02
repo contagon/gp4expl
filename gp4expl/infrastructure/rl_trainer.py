@@ -250,6 +250,7 @@ class RL_Trainer(object):
         eval_paths, eval_envsteps_this_batch = utils.sample_trajectories(
             self.env, eval_policy, self.params["eval_batch_size"], self.params["ep_len"]
         )
+        np.savetxt(f"paths{itr}.txt", eval_paths)
 
         # save eval rollouts as videos in tensorboard event file
         if self.log_video and train_video_paths != None:
