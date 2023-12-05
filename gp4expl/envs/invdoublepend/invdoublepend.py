@@ -13,8 +13,6 @@ class MyInvertedDoublePendulum(MujocoEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 20,
     }
@@ -35,7 +33,8 @@ class MyInvertedDoublePendulum(MujocoEnv, utils.EzPickle):
         self.do_simulation(action.flatten(), self.frame_skip)
         ob = self._get_obs()
         r, terminated = self.get_reward(ob, action)
-        self.renderer.render_step()
+        if self.render_mode == "human":
+            self.render()
         return ob, r, terminated, False, {}
 
     def reset_model(self):

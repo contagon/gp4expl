@@ -1,15 +1,11 @@
 from collections import OrderedDict
 import pickle
-import os
-import sys
 import time
 
 import gym
-from gym import wrappers
 import numpy as np
 import torch
 
-from gp4expl.agents.mb_agent import MBAgent
 from gp4expl.infrastructure import pytorch_util as ptu
 from gp4expl.infrastructure import utils
 from gp4expl.infrastructure.logger import Logger
@@ -159,8 +155,10 @@ class RL_Trainer(object):
 
             # train agent (using sampled data from replay buffer)
             if itr % print_period == 0:
-                print("\nTraining agent...")
+                print("\nTraining agent...", end="")
             all_logs = self.train_agent()
+            if itr % print_period == 0:
+                print("Finished training.")
 
             # if there is a model, log model predictions
             self.log_model_predictions(itr, all_logs)

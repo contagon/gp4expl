@@ -23,7 +23,9 @@ class GPAgent(BaseAgent):
             )
             self.dyn_models.append(model)
 
-        self.explore_reward = lambda obs, action: self.dyn_models[0].get_reward(obs, action, self.data_statistics)
+        self.explore_reward = lambda obs, action: self.dyn_models[0].get_reward(
+            obs, action, self.data_statistics
+        )
 
         self.actor = MPCPolicy(
             self.env,
@@ -41,14 +43,17 @@ class GPAgent(BaseAgent):
         self.replay_buffer = ReplayBuffer()
 
         self.iteration_count = 0
-        self.num_exploration_iterations = 5
+        self.num_exploration_iterations = -1
+
+        if self.num_exploration_iterations < 0:
+            self.actor.reward_fun = self.env.get_reward
 
     def train(self, ob_no, ac_na, re_n, next_ob_no, terminal_n):
         # training a MB agent refers to updating the predictive model using observed state transitions
         # NOTE: each model in the ensemble is trained on a different random batch of size batch_size
         if self.iteration_count > self.num_exploration_iterations:
             print("Switching rewards")
-            self.actor.reward_fun = self.env.get_reward 
+            self.actor.reward_fun = self.env.get_reward
 
         losses = []
         num_data = ob_no.shape[0]
