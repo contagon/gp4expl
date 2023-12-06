@@ -14,18 +14,27 @@ def calculate_mean_prediction_error(env, action_sequence, models, data_statistic
 
     # predicted
     ob = np.expand_dims(true_states[0], 0)
+    if hasattr(model, "get_reward"):
+        re = model.get_reward(ob, action_sequence[:1], data_statistics)
+    else:
+        re = 0
     pred_states = []
+    reward = []
     for ac in action_sequence:
         pred_states.append(ob)
+        reward.append(re)
         action = np.expand_dims(ac, 0)
         ob = model.get_prediction(ob, action, data_statistics)
-    pred_states = np.squeeze(pred_states)
+        if hasattr(model, "get_reward"):
+            re = model.get_reward(ob, action, data_statistics)
 
+    pred_states = np.squeeze(pred_states)
+    reward = np.squeeze(reward)
     # mpe
     l = true_states.shape[0]
     mpe = mean_squared_error(pred_states[:l], true_states)
 
-    return mpe, true_states, pred_states
+    return mpe, true_states, pred_states, reward
 
 
 def perform_actions(env, actions):
@@ -80,9 +89,9 @@ def sample_trajectory(
                             env.unwrapped.sim.render(height=500, width=500)[::-1]
                         )
                 else:
-                    image_obs.append(env.render(mode=render_mode))
+                    image_obs.append(env.render())
             if "human" in render_mode:
-                env.render(mode=render_mode)
+                env.render()
                 time.sleep(env.model.opt.timestep)
 
         obs.append(ob)

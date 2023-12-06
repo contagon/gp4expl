@@ -12,8 +12,6 @@ class Reacher7DOFEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 50,
     }
@@ -23,6 +21,8 @@ class Reacher7DOFEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # placeholder
         self.hand_sid = -2
         self.target_sid = -1
+
+        self.random_target = False
 
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         mujoco_env.MujocoEnv.__init__(
@@ -44,8 +44,10 @@ class Reacher7DOFEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         )
         self.skip = self.frame_skip
         if self.render_mode == "rgb_array":
-            super().render()
-            self.renderer.render_step()
+            self.render()
+
+    def randomize_target(self):
+        self.random_target = True
 
     def _get_obs(self):
         return np.concatenate(
@@ -67,7 +69,7 @@ class Reacher7DOFEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # finalize step
         env_info = {"ob": ob, "rewards": self.reward_dict, "score": score}
 
-        return ob, reward, done, env_info
+        return ob, reward, done, {}, env_info
 
     def get_score(self, obs):
         hand_pos = obs[-6:-3]
@@ -115,12 +117,13 @@ class Reacher7DOFEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def reset(self, **kwargs):
         _ = self.reset_model()
 
-        self.model.site_pos[self.target_sid] = [0.1, 0.1, 0.1]
+        if not self.random_target:
+            self.model.site_pos[self.target_sid] = [0.1, 0.1, 0.1]
 
-        observation, _reward, done, _info = self.step(np.zeros(7))
+        observation, _reward, done, _, _info = self.step(np.zeros(7))
         ob = self._get_obs()
 
-        return ob
+        return ob, _info
 
     def reset_model(self, seed=None):
         if seed is not None:
@@ -145,10 +148,3 @@ class Reacher7DOFEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         # return
         return self._get_obs()
-
-    def render(
-        self,
-    ):
-        ren = super().render()
-        self.renderer.render_step()
-        return [ren[0]]

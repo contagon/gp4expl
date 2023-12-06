@@ -6,6 +6,7 @@ import gym
 import numpy as np
 import torch
 
+from gp4expl.agents.gp_agent import GPAgent
 from gp4expl.infrastructure import pytorch_util as ptu
 from gp4expl.infrastructure import utils
 from gp4expl.infrastructure.logger import Logger
@@ -46,6 +47,10 @@ class RL_Trainer(object):
             self.env = gym.make(self.params["env_name"])
         else:
             self.env = gym.make(self.params["env_name"], render_mode="rgb_array")
+
+        if self.params["env_name"] == "reacher" and self.params["random_target"]:
+            self.env.randomize_target()
+
         self.env.reset(seed=seed)
 
         # import plotting (locally if 'obstacles' env)
@@ -325,12 +330,13 @@ class RL_Trainer(object):
 
         # sample actions
         action_sequence = self.agent.actor.sample_action_sequences(
-            num_sequences=1, horizon=10
+            num_sequences=1,
+            horizon=10,
         )  # 20 reacher
         action_sequence = action_sequence[0]
 
         # calculate and log model prediction error
-        mpe, true_states, pred_states = utils.calculate_mean_prediction_error(
+        mpe, true_states, pred_states, reward = utils.calculate_mean_prediction_error(
             self.env,
             action_sequence,
             self.agent.dyn_models,
@@ -352,6 +358,9 @@ class RL_Trainer(object):
             plt.subplot(ob_dim // 2, 2, i + 1)
             plt.plot(true_states[:, i], "g")
             plt.plot(pred_states[:, i], "r")
+            if isinstance(self.agent, GPAgent):
+                plt.plot(pred_states[:, i] + reward, "r", alpha=0.1)
+                plt.plot(pred_states[:, i] - reward, "r", alpha=0.1)
         self.fig.suptitle("MPE: " + str(mpe))
         self.fig.savefig(
             self.params["logdir"] + "/itr_" + str(itr) + "_predictions.png",

@@ -23,6 +23,7 @@ class MB_Trainer(object):
             "size": params["size"],
             "learning_rate": params["learning_rate"],
             "num_inducing": params["num_inducing"],
+            "num_exploration_iterations": params["num_exploration_iterations"],
         }
 
         train_args = {
@@ -72,6 +73,7 @@ def main():
     parser.add_argument("--ep_len", type=int, default=200)
     parser.add_argument("--exp_name", type=str, default="todo")
     parser.add_argument("--n_iter", "-n", type=int, default=20)
+    parser.add_argument("--random-target", action="store_true")
 
     parser.add_argument(
         "--dynamics_model", type=str, default="gp", choices=["gp", "nn"]
@@ -79,6 +81,7 @@ def main():
 
     # GP Arguments
     parser.add_argument("--num_inducing", type=int, default=100)
+    parser.add_argument("--num_exploration_iterations", type=int, default=-1)
 
     # NN Arguments
     parser.add_argument("--learning_rate", "-lr", type=float, default=0.001)

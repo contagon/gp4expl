@@ -43,7 +43,9 @@ class GPAgent(BaseAgent):
         self.replay_buffer = ReplayBuffer()
 
         self.iteration_count = 0
-        self.num_exploration_iterations = -1
+        self.num_exploration_iterations = self.agent_params[
+            "num_exploration_iterations"
+        ]
 
         if self.num_exploration_iterations < 0:
             self.actor.reward_fun = self.env.get_reward
@@ -51,6 +53,7 @@ class GPAgent(BaseAgent):
     def train(self, ob_no, ac_na, re_n, next_ob_no, terminal_n):
         # training a MB agent refers to updating the predictive model using observed state transitions
         # NOTE: each model in the ensemble is trained on a different random batch of size batch_size
+
         if self.iteration_count > self.num_exploration_iterations:
             print("Switching rewards")
             self.actor.reward_fun = self.env.get_reward
@@ -110,4 +113,10 @@ class GPAgent(BaseAgent):
     def sample(self, batch_size):
         # NOTE: sampling batch_size * ensemble_size,
         # so each model in our ensemble can get trained on batch_size data
-        return self.replay_buffer.sample_random_data(batch_size * self.ensemble_size)
+        # print(
+        #     self.replay_buffer.sample_random_data(batch_size * self.ensemble_size).shape
+        # )
+        # print(
+        #     self.replay_buffer.sample_recent_data(batch_size * self.ensemble_size).shape
+        # )
+        return self.replay_buffer.sample_recent_data(batch_size * self.ensemble_size)

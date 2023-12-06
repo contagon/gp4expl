@@ -13,7 +13,7 @@ def register_envs():
         max_episode_steps=500,
     )
     register(
-        id="reacher-hw4_part1-v0",
+        id="reacher",
         entry_point="gp4expl.envs.reacher:Reacher7DOFEnv",
         max_episode_steps=500,
     )
@@ -25,5 +25,10 @@ def register_envs():
     register(
         id="double-inverted-pendulum",
         entry_point="gp4expl.envs.invdoublepend:MyInvertedDoublePendulum",
+        max_episode_steps=200,
+    )
+    register(
+        id="small-reacher",
+        entry_point="gp4expl.envs.reachersmall:MyReacherEnv",
         max_episode_steps=200,
     )
