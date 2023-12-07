@@ -27,6 +27,7 @@ class MB_Trainer(object):
 
         train_args = {
             "num_agent_train_steps_per_iter": params["num_agent_train_steps_per_iter"],
+            "num_exploration_iterations": params["num_exploration_iterations"],
         }
 
         controller_args = {
@@ -113,6 +114,7 @@ def main():
     parser.add_argument("--video_log_freq", type=int, default=-1)  # -1 to disable
     parser.add_argument("--scalar_log_freq", type=int, default=1)  # -1 to disable
     parser.add_argument("--save_params", action="store_true")
+    parser.add_argument("--num_exploration_iterations", type=int, default=0)
     args = parser.parse_args()
 
     # convert to dictionary

@@ -1,4 +1,6 @@
 from collections import OrderedDict
+from matplotlib import pyplot as plt
+from pathlib import Path
 import pickle
 import os
 import sys
@@ -34,6 +36,11 @@ class RL_Trainer(object):
         # Get params, create logger
         self.params = params
         self.logger = Logger(self.params["logdir"])
+        self.csv_path = Path(self.params["logdir"]) / "data.csv"
+        with open(self.csv_path, "w") as f:
+            f.write(
+                "itr,Train_AverageReturn,Train_StdReturn,Train_AverageEpLen,Eval_AverageReturn,Eval_StdReturn,Eval_AverageEpLen"
+            )
 
         # Set random seeds
         seed = self.params["seed"]
@@ -80,6 +87,9 @@ class RL_Trainer(object):
         ac_dim = self.env.action_space.n if discrete else self.env.action_space.shape[0]
         self.params["agent_params"]["ac_dim"] = ac_dim
         self.params["agent_params"]["ob_dim"] = ob_dim
+        self.params["agent_params"]["num_exploration_iterations"] = self.params[
+            "num_exploration_iterations"
+        ]
 
         if "sac_params" in self.params["agent_params"]:
             self.sac_params = self.params["agent_params"]["sac_params"]
@@ -177,6 +187,12 @@ class RL_Trainer(object):
                     self.agent.save(
                         "{}/agent_itr_{}.pt".format(self.params["logdir"], itr)
                     )
+
+        obs, acs, _, _, _, _ = utils.convert_listofrollouts(
+            self.agent.replay_buffer.paths
+        )
+        np.save(Path(self.params["logdir"]) / "obs", obs)
+        np.save(Path(self.params["logdir"]) / "acs", acs)
 
     ####################################
     ####################################
@@ -305,6 +321,10 @@ class RL_Trainer(object):
             logs["Train_EnvstepsSoFar"] = self.total_envsteps
             logs["TimeSinceStart"] = time.time() - self.start_time
             logs.update(last_log)
+            with open(self.csv_path, "a") as f:
+                f.write(
+                    f"\n{itr},{np.mean(train_returns)},{np.std(train_returns)},{np.mean(train_ep_lens)},{np.mean(eval_returns)},{np.std(eval_returns)},{np.mean(eval_ep_lens)}"
+                )
 
             if itr == 0:
                 self.initial_return = np.mean(train_returns)
