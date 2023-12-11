@@ -1,4 +1,5 @@
 __pycache__
+venv
 *.egg-info
 data
 hw4_part2
