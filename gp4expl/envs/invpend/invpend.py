@@ -5,14 +5,17 @@ from gym.envs.mujoco import MujocoEnv
 from gym.envs.mujoco.inverted_pendulum_v4 import InvertedPendulumEnv
 from gym.spaces import Box
 
+from pathlib import Path
+
 
 class MyInvertedPendulum(InvertedPendulumEnv):
     def __init__(self, **kwargs):
         utils.EzPickle.__init__(self, **kwargs)
         observation_space = Box(low=-np.inf, high=np.inf, shape=(4,), dtype=np.float64)
+        model_file = Path(__file__).parent / "invpend.xml"
         MujocoEnv.__init__(
             self,
-            "inverted_pendulum.xml",
+            str(model_file),
             2,
             observation_space=observation_space,
             **kwargs,
@@ -27,15 +30,19 @@ class MyInvertedPendulum(InvertedPendulumEnv):
         return ob, reward, terminated, False, {}
 
     def reset_model(self):
-        qpos = self.init_qpos + self.np_random.uniform(
+        qpos = np.array([0, np.pi]) + self.np_random.uniform(
             size=self.model.nq, low=-0.01, high=0.01
         )
-        # qpos = np.zeros_like(qpos)
         qvel = self.init_qvel + self.np_random.uniform(
             size=self.model.nv, low=-0.01, high=0.01
         )
         self.set_state(qpos, qvel)
         return self._get_obs()
+
+    def _get_obs(self):
+        state = self.data.qpos
+        # state[1] = (state[1] + np.pi / 4) % (2 * np.pi) - np.pi / 4
+        return np.concatenate([state, self.data.qvel]).ravel()
 
     def get_reward(self, observations, actions):
         """get reward/s of given (observations, actions) datapoint or datapoints
@@ -57,15 +64,21 @@ class MyInvertedPendulum(InvertedPendulumEnv):
         else:
             batch_mode = True
 
-        terminated = np.logical_and(
-            np.isfinite(observations).all(axis=-1), np.abs(observations[:, 1]) > 0.2
-        )
+        terminated = ~np.isfinite(observations).all(axis=-1)
 
         # Reward if we're still standing
         # reward = (~terminated).astype(np.int32)
 
         # Reward based on how upright we still are
-        reward = np.full_like(terminated, 1) - np.abs(observations[:, 1])
+        angle = (observations[:, 1] + np.pi) % (2 * np.pi) - np.pi
+        x = observations[:, 0]
+        vel = observations[:, 3]
+        reward = (
+            np.full_like(terminated, 1)
+            - np.abs(angle)
+            - 0.05 * np.abs(vel)
+            - 0.1 * np.abs(x)
+        )
         # reward = (~terminated).astype(np.float32) - np.abs(observations[:,1])
 
         if not batch_mode:
