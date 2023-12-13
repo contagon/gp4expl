@@ -82,12 +82,6 @@ class RL_Trainer(object):
         self.params["agent_params"]["ac_dim"] = ac_dim
         self.params["agent_params"]["ob_dim"] = ob_dim
 
-        if "sac_params" in self.params["agent_params"]:
-            self.sac_params = self.params["agent_params"]["sac_params"]
-            self.sac_params["discrete"] = discrete
-            self.sac_params["ac_dim"] = ac_dim
-            self.sac_params["ob_dim"] = ob_dim
-
         # simulation timestep, will be used for video saving
         if "model" in dir(self.env):
             self.fps = 1 / self.env.model.opt.timestep

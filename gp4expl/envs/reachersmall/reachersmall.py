@@ -2,40 +2,47 @@ import numpy as np
 
 from gym import utils
 from gym.envs.mujoco import MujocoEnv
-from gym.envs.mujoco.inverted_pendulum_v4 import InvertedPendulumEnv
+from gym.envs.mujoco.reacher_v4 import ReacherEnv
 from gym.spaces import Box
 
 
-class MyInvertedPendulum(InvertedPendulumEnv):
+class MyReacherEnv(ReacherEnv):
     def __init__(self, **kwargs):
         utils.EzPickle.__init__(self, **kwargs)
-        observation_space = Box(low=-np.inf, high=np.inf, shape=(4,), dtype=np.float64)
+        observation_space = Box(low=-np.inf, high=np.inf, shape=(9,), dtype=np.float64)
         MujocoEnv.__init__(
-            self,
-            "inverted_pendulum.xml",
-            2,
-            observation_space=observation_space,
-            **kwargs,
+            self, "reacher.xml", 2, observation_space=observation_space, **kwargs
+        )
+
+    def _get_obs(self):
+        theta = self.data.qpos.flat[:2]
+        return np.concatenate(
+            [
+                theta,
+                self.data.qpos.flat[2:],
+                self.data.qvel.flat[:2],
+                self.get_body_com("fingertip") - self.get_body_com("target"),
+            ]
         )
 
     def step(self, a):
+        vec = self.get_body_com("fingertip") - self.get_body_com("target")
+        reward_dist = -np.linalg.norm(vec)
+        reward_ctrl = -np.square(a).sum()
+
         self.do_simulation(a, self.frame_skip)
-        ob = self._get_obs()
-        reward, terminated = self.get_reward(ob, a)
         if self.render_mode == "human":
             self.render()
-        return ob, reward, terminated, False, {}
 
-    def reset_model(self):
-        qpos = self.init_qpos + self.np_random.uniform(
-            size=self.model.nq, low=-0.01, high=0.01
+        ob = self._get_obs()
+        reward = self.get_reward(ob, a)[0]
+        return (
+            ob,
+            reward,
+            False,
+            False,
+            dict(reward_dist=reward_dist, reward_ctrl=reward_ctrl),
         )
-        # qpos = np.zeros_like(qpos)
-        qvel = self.init_qvel + self.np_random.uniform(
-            size=self.model.nv, low=-0.01, high=0.01
-        )
-        self.set_state(qpos, qvel)
-        return self._get_obs()
 
     def get_reward(self, observations, actions):
         """get reward/s of given (observations, actions) datapoint or datapoints
@@ -57,16 +64,12 @@ class MyInvertedPendulum(InvertedPendulumEnv):
         else:
             batch_mode = True
 
-        terminated = np.logical_and(
-            np.isfinite(observations).all(axis=-1), np.abs(observations[:, 1]) > 0.2
-        )
+        vec = observations[:, -3:]
+        reward_dist = -np.linalg.norm(vec, axis=1)
+        reward_ctrl = -np.square(actions).sum(axis=1)
+        reward = reward_dist + 0.1 * reward_ctrl
 
-        # Reward if we're still standing
-        # reward = (~terminated).astype(np.int32)
-
-        # Reward based on how upright we still are
-        reward = np.full_like(terminated, 1) - np.abs(observations[:, 1])
-        # reward = (~terminated).astype(np.float32) - np.abs(observations[:,1])
+        terminated = np.full_like(reward, False, dtype=np.bool)
 
         if not batch_mode:
             reward = reward[0]
