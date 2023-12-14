@@ -13,6 +13,7 @@ from gp4expl.infrastructure.logger import Logger
 
 # register all of our envs
 from gp4expl.envs import register_envs
+from pathlib import Path
 
 register_envs()
 
@@ -37,6 +38,12 @@ class RL_Trainer(object):
         np.random.seed(seed)
         torch.manual_seed(seed)
         ptu.init_gpu(use_gpu=not self.params["no_gpu"], gpu_id=self.params["which_gpu"])
+
+        self.csv_path = Path(self.params["logdir"]) / "data.csv"
+        with open(self.csv_path, "w") as f:
+            f.write(
+                "itr,Train_AverageReturn,Train_StdReturn,Train_AverageEpLen,Eval_AverageReturn,Eval_StdReturn,Eval_AverageEpLen"
+            )
 
         #############
         ## ENV
@@ -175,6 +182,12 @@ class RL_Trainer(object):
                         "{}/agent_itr_{}.pt".format(self.params["logdir"], itr)
                     )
 
+            obs, acs, _, _, _, _ = utils.convert_listofrollouts(
+                self.agent.replay_buffer.paths
+            )
+            np.save(Path(self.params["logdir"]) / "obs", obs)
+            np.save(Path(self.params["logdir"]) / "acs", acs)
+
     ####################################
     ####################################
 
@@ -302,6 +315,10 @@ class RL_Trainer(object):
             logs["Train_EnvstepsSoFar"] = self.total_envsteps
             logs["TimeSinceStart"] = time.time() - self.start_time
             logs.update(last_log)
+            with open(self.csv_path, "a") as f:
+                f.write(
+                    f"\n{itr},{np.mean(train_returns)},{np.std(train_returns)},{np.mean(train_ep_lens)},{np.mean(eval_returns)},{np.std(eval_returns)},{np.mean(eval_ep_lens)}"
+                )
 
             if itr == 0:
                 self.initial_return = np.mean(train_returns)
