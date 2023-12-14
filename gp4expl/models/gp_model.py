@@ -169,21 +169,18 @@ class GPModel:
         )
         y = (self.y.copy() - self.delta_mean) / self.delta_std
 
-        print(self.X.mean(axis=0), self.obs_mean, self.acs_mean)
-
-        self.delta_gp = GPy.models.GPRegression(
+        self.delta_gp = GPy.models.SparseGPRegression(
             X,
             y,
             self.kernel,
             # Z=self.Z,
-            # num_inducing=self.num_inducing,
+            num_inducing=self.num_inducing,
         )
         self.delta_gp.likelihood.variance = self.noise_var
         self.delta_gp.optimize()
 
         self.kernel = self.delta_gp.kern
         self.noise_var = self.delta_gp.likelihood.variance
-        print(self.noise_var)
 
         # self.X = np.array(self.delta_gp.inducing_inputs)
         # self.y, std = self.delta_gp.predict(self.X)
