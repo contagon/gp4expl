@@ -17,6 +17,7 @@ class GPModel:
 
         self.X = np.zeros((0, ac_dim + ob_dim))
         self.y = np.zeros((0, ob_dim))
+        self.Z = None
         self.kernel = GPy.kern.RBF(ac_dim + ob_dim)
         self.noise_var = 1e-2
         self.delta_gp = None
@@ -37,12 +38,18 @@ class GPModel:
         delta_mean,
         delta_std,
     ):
-        self.obs_mean = obs_mean
-        self.obs_std = obs_std
-        self.acs_mean = acs_mean
-        self.acs_std = acs_std
-        self.delta_mean = delta_mean
-        self.delta_std = delta_std
+        # self.obs_mean = obs_mean
+        # self.obs_std = obs_std
+        # self.acs_mean = acs_mean
+        # self.acs_std = acs_std
+        # self.delta_mean = delta_mean
+        # self.delta_std = delta_std
+        self.obs_mean = self.X.mean(axis=0)[: self.ob_dim]
+        self.obs_std = self.X.std(axis=0)[: self.ob_dim]
+        self.acs_mean = self.X.mean(axis=0)[self.ob_dim :]
+        self.acs_std = self.X.std(axis=0)[self.ob_dim :]
+        self.delta_mean = self.y.mean(axis=0)
+        self.delta_std = self.y.std(axis=0)
 
     def forward(
         self,
@@ -143,32 +150,45 @@ class GPModel:
              - 'delta_std'
         :return:
         """
-        self.update_statistics(**data_statistics)
 
-        obs_normalized = (observations - self.obs_mean) / self.obs_std
-        acs_normalized = (actions - self.acs_mean) / self.acs_std
+        # obs_normalized = (observations - self.obs_mean) / self.obs_std
+        # acs_normalized = (actions - self.acs_mean) / self.acs_std
         # predicted change in obs
-        concatenated_input = np.hstack([obs_normalized, acs_normalized])
+        concatenated_input = np.hstack([observations, actions])
 
-        target = ((next_observations - observations) - self.delta_mean) / self.delta_std
+        # target = ((next_observations - observations) - self.delta_mean) / self.delta_std
+        target = next_observations - observations
 
         self.X = np.vstack((self.X, concatenated_input))
         self.y = np.vstack((self.y, target))
 
-        self.delta_gp = GPy.models.SparseGPRegression(
-            self.X,
-            self.y,
+        self.update_statistics(**data_statistics)
+
+        X = (self.X.copy() - np.append(self.obs_mean, self.acs_mean)) / np.append(
+            self.obs_std, self.acs_std
+        )
+        y = (self.y.copy() - self.delta_mean) / self.delta_std
+
+        print(self.X.mean(axis=0), self.obs_mean, self.acs_mean)
+
+        self.delta_gp = GPy.models.GPRegression(
+            X,
+            y,
             self.kernel,
-            num_inducing=self.num_inducing,
+            # Z=self.Z,
+            # num_inducing=self.num_inducing,
         )
         self.delta_gp.likelihood.variance = self.noise_var
         self.delta_gp.optimize()
 
         self.kernel = self.delta_gp.kern
         self.noise_var = self.delta_gp.likelihood.variance
+        print(self.noise_var)
 
-        self.X = np.array(self.delta_gp.inducing_inputs)
-        self.y, std = self.delta_gp.predict(self.X)
+        # self.X = np.array(self.delta_gp.inducing_inputs)
+        # self.y, std = self.delta_gp.predict(self.X)
+        # self.Z = np.array(self.delta_gp.inducing_inputs)
+        # print(self.Z.shape, self.Z[0])
 
         # print("TRAINING", self.delta_gp.x_train.shape)
 

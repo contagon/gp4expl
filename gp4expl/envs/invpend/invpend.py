@@ -30,7 +30,13 @@ class MyInvertedPendulum(InvertedPendulumEnv):
         qpos = self.init_qpos + self.np_random.uniform(
             size=self.model.nq, low=-0.01, high=0.01
         )
-        # qpos = np.zeros_like(qpos)
+        qpos[1] += 0.2
+        # qpos[1] = np.sign(qpos[1]) * np.abs(qpos[1]) ** (1 / 4)
+        # print(qpos[1])
+        # qpos = np.zeros(2)
+        # qpos[0] = self.np_random.uniform(low=-0.01, high=0.01)
+        # qpos[1] = self.np_random.uniform(low=0.2, high=0.3)
+        qpos[1] = qpos[1] if self.np_random.random() < 0.5 else -qpos[1]
         qvel = self.init_qvel + self.np_random.uniform(
             size=self.model.nv, low=-0.01, high=0.01
         )
@@ -57,15 +63,20 @@ class MyInvertedPendulum(InvertedPendulumEnv):
         else:
             batch_mode = True
 
-        terminated = np.logical_and(
-            np.isfinite(observations).all(axis=-1), np.abs(observations[:, 1]) > 0.2
+        going = np.logical_and(
+            np.isfinite(observations).all(axis=-1), np.abs(observations[:, 1]) < 0.5
         )
+        terminated = ~going
 
         # Reward if we're still standing
         # reward = (~terminated).astype(np.int32)
 
         # Reward based on how upright we still are
-        reward = np.full_like(terminated, 1) - np.abs(observations[:, 1])
+        reward = (
+            np.full_like(terminated, 1)
+            - np.abs(observations[:, 1])
+            - 1 * np.abs(observations[:, 0])
+        )
         # reward = (~terminated).astype(np.float32) - np.abs(observations[:,1])
 
         if not batch_mode:
