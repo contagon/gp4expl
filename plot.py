@@ -12,7 +12,7 @@ def plot_cartpole_performance():
 
     data = pd.DataFrame()
     for p in DATA.glob("*"):
-        if "inverted-pendulum" in str(p):
+        if "_inverted-pendulum" in str(p):
             new = pd.read_csv(p / "data.csv")
 
             if "gp" in str(p):
@@ -42,7 +42,7 @@ def plot_cartpole_performance():
         hue_order=["GP", "GP-E5", "GP-E10", "GP-E15", "NN"],
         err_kws={"alpha": 0.2},
     )
-    plt.savefig("invpend_eval.png")
+    plt.savefig("results/cartpole_eval.png")
 
 
 def plot_cartpole_heatmap():
@@ -50,7 +50,7 @@ def plot_cartpole_heatmap():
 
     data = {}
     for p in DATA.glob("*"):
-        if "inverted-pendulum" in str(p):
+        if "_inverted-pendulum" in str(p):
             new = np.load(p / "obs.npy")
 
             if "gp" in str(p):
@@ -83,7 +83,7 @@ def plot_cartpole_heatmap():
         )
         axs[i].set_title(name)
 
-    plt.savefig("invpend_heatmap.png")
+    plt.savefig("results/cartpole_heatmap.png")
 
 
 if __name__ == "__main__":
