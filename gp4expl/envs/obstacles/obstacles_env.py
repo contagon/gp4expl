@@ -70,7 +70,7 @@ class Obstacles(gym.Env):
         self.reset_pose = self.pick_start_pos()
         self.reset_vel = self.end
 
-        return self.do_reset(self.reset_pose, self.reset_vel)
+        return self.do_reset(self.reset_pose, self.reset_vel), {}
 
     def do_reset(self, reset_pose, reset_vel, reset_goal=None):
         self.current = reset_pose.copy()
@@ -156,7 +156,7 @@ class Obstacles(gym.Env):
         score = self.get_score(ob)
         env_info = {"ob": ob, "rewards": self.reward_dict, "score": score}
 
-        return ob, reward, done, env_info
+        return ob, reward, done, env_info, {}
 
     ########################################
     # utility functions
